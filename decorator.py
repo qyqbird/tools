@@ -23,7 +23,7 @@ def running_time(func):
 '''
 需要传参数的装饰器，则需要编写一个返回decorator的decorator
 '''
-def load_memcached(prefix):
+def fail_version_local_memcached(prefix):
     #1.一阶套
     def decorator(function):
         print 'In decorator'
@@ -45,13 +45,33 @@ def load_memcached(prefix):
     return decorator
 
 
+'''
+缓存文件装饰器
+'''
+def load_memcached(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kw):
+        today = time.strftime("%Y%m%d",time.localtime())
+        print args[1]
+        file_name = args[1] + '_' + today
+        result = None
+        if os.path.exists(file_name):
+            print 'load local:{0}'.format(file_name)
+            result =  cPickle.load(file(file_name))
+        else:
+            #result = func(*args, **kw)
+            result = args[0]()
+            cPickle.dump(result, file(file_name,'w'))
+            print 'load internet and memcached:{0}'.format(file_name)
+        return result
+    return wrapper
+
+
 #这里直接先执行，返回一个传入参数的装饰器
-@load_memcached('nanshou')
-def get_concept_classified(funcname):
-    print 'In get_concept_classified'
+@load_memcached
+def ts_interface(funcname,filename):
     raw_data = funcname()
-    print 'after get_concept_classified'
     return raw_data
 
-ll = get_concept_classified(ts.get_concept_classified)
+ll = ts_interface(ts.get_concept_classified,'hhhh')
 print ll
